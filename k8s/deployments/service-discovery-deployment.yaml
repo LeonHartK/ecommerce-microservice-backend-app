@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: service-discovery
+  labels:
+    app: service-discovery
 spec:
   replicas: 1
   selector:
@@ -15,8 +17,28 @@ spec:
       containers:
         - name: service-discovery
           image: docker.io/leonkhart/service-discovery:dev
+          imagePullPolicy: Always
           ports:
             - containerPort: 8761
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: dev
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8761
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8761
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
