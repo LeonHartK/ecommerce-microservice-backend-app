@@ -15,7 +15,7 @@ pipeline {
 
         stage('Build JARs') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                bat 'mvn clean package -DskipTests'
             }
         }
 
@@ -31,9 +31,9 @@ pipeline {
                         "user-service"
                     ]
                     for (svc in services) {
-                        sh """
-                            echo "Building Docker image for ${svc}"
-                            docker build -t $REGISTRY/${svc}:dev --build-arg PROJECT_VERSION=${PROJECT_VERSION} ${svc}/
+                        bat """
+                            echo Building Docker image for ${svc}
+                            docker build -t %REGISTRY%/${svc}:dev --build-arg PROJECT_VERSION=%PROJECT_VERSION% ${svc}/
                         """
                     }
                 }
@@ -44,7 +44,9 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKER_TOKEN')]) {
-                        sh "echo $DOCKER_TOKEN | docker login -u leonkhart --password-stdin"
+                        bat """
+                            echo %DOCKER_TOKEN% | docker login -u leonkhart --password-stdin
+                        """
                         def services = [
                             "api-gateway",
                             "service-discovery",
@@ -54,18 +56,42 @@ pipeline {
                             "user-service"
                         ]
                         for (svc in services) {
-                            sh "docker push $REGISTRY/${svc}:dev"
+                            bat "docker push %REGISTRY%/${svc}:dev"
                         }
                     }
                 }
             }
         }
 
+        stage('Test Kubernetes Connection') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
+                    bat '''
+                    echo Verificando conexión con el cluster...
+                    kubectl config current-context
+                    kubectl get nodes
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/deployments/'
-                sh 'kubectl apply -f k8s/services/'
+                withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
+                    bat '''
+                    echo Desplegando microservicios en Kubernetes...
+                    kubectl apply -f k8s\\deployments\\
+                    kubectl apply -f k8s\\services\\
+                    kubectl get pods -o wide
+                    '''
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            bat 'docker logout || exit 0'
         }
     }
 }
