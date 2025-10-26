@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: docker.io/leonkhart/user-service:dev
+          ports:
+            - containerPort: 8700
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://service-discovery:8761/eureka/

@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY = "docker.io/leonkhart"
+        PROJECT_VERSION = "0.1.0"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'develop', url: 'https://github.com/LeonHartK/ecommerce-microservice-backend-app.git'
+            }
+        }
+
+        stage('Build JARs') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    def services = [
+                        "api-gateway",
+                        "service-discovery",
+                        "order-service",
+                        "product-service",
+                        "payment-service",
+                        "user-service"
+                    ]
+                    for (svc in services) {
+                        sh """
+                            echo "Building Docker image for ${svc}"
+                            docker build -t $REGISTRY/${svc}:dev --build-arg PROJECT_VERSION=${PROJECT_VERSION} ${svc}/
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKER_TOKEN')]) {
+                        sh "echo $DOCKER_TOKEN | docker login -u leonkhart --password-stdin"
+                        def services = [
+                            "api-gateway",
+                            "service-discovery",
+                            "order-service",
+                            "product-service",
+                            "payment-service",
+                            "user-service"
+                        ]
+                        for (svc in services) {
+                            sh "docker push $REGISTRY/${svc}:dev"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f k8s/deployments/'
+                sh 'kubectl apply -f k8s/services/'
+            }
+        }
+    }
+}
