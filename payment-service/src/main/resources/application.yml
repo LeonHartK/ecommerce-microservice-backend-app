@@ -7,7 +7,7 @@ spring:
   zipkin:
     base-url: ${SPRING_ZIPKIN_BASE_URL:http://localhost:9411/}
   config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:9296}
+    import: "optional:classpath:/"
   application:
     name: PAYMENT-SERVICE
   profiles:
