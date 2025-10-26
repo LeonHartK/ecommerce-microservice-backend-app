@@ -1,30 +1,50 @@
-
 server:
   port: 8761
+
+spring:
+  application:
+    name: SERVICE-DISCOVERY
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    wait-time-in-ms-when-sync-empty: 0
+    enable-self-preservation: false  # importante para entornos locales/minikube
 
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
 
-eureka:
-  client:
-    register-with-eureka: false
-    fetch-registry: false
+resilience4j:
+  circuitbreaker:
+    instances:
+      serviceDiscovery:
+        register-health-indicator: true
+        event-consumer-buffer-size: 10
+        automatic-transition-from-open-to-half-open-enabled: true
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-size: 10
+        wait-duration-in-open-state: 5s
+        sliding-window-type: COUNT_BASED
 
 logging:
   level:
     org:
-      hibernate:
-        SQL: INFO
-      springframework:
-        web: INFO
-        data: INFO
-      boot:
-        autoconfigure:
-          data:
-            rest: INFO
-            jpa: INFO
-            orm: INFO
-
+      hibernate.SQL: INFO
+      springframework.web: INFO
+      springframework.data: INFO
+      boot.autoconfigure.data.rest: INFO
+      boot.autoconfigure.data.jpa: INFO
+      boot.autoconfigure.orm: INFO

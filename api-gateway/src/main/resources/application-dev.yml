@@ -7,10 +7,6 @@ server:
 spring:
   application:
     name: API-GATEWAY
-  zipkin:
-    base-url: ${SPRING_ZIPKIN_BASE_URL:http://zipkin:9411/}
-  config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://cloud-config:9296}
 
 eureka:
   client:
