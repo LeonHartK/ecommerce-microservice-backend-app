@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JDK11'
+    }
+    
     environment {
         REGISTRY = "docker.io/leonkhart"
         PROJECT_VERSION = "0.1.0"
