@@ -1,9 +1,23 @@
-
 server:
   port: 8080
   error:
     whitelabel:
       enabled: false
+
+spring:
+  application:
+    name: API-GATEWAY
+  zipkin:
+    base-url: ${SPRING_ZIPKIN_BASE_URL:http://zipkin:9411/}
+  config:
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://cloud-config:9296}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    serviceUrl:
+      defaultZone: http://service-discovery:8761/eureka/
 
 management:
   endpoints:
@@ -14,15 +28,9 @@ management:
 logging:
   level:
     org:
-      hibernate:
-        SQL: DEBUG
-      springframework:
-        web: DEBUG
-        data: DEBUG
-      boot:
-        autoconfigure:
-          data:
-            rest: DEBUG
-            jpa: DEBUG
-            orm: DEBUG
-
+      hibernate.SQL: DEBUG
+      springframework.web: DEBUG
+      springframework.data: DEBUG
+      boot.autoconfigure.data.rest: DEBUG
+      boot.autoconfigure.data.jpa: DEBUG
+      boot.autoconfigure.orm: DEBUG
