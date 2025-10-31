@@ -79,6 +79,16 @@ pipeline {
             }
         }
 
+        stage('Verify Cluster Connection') {
+            steps {
+                bat '''
+                echo Verificando conexión con el cluster...
+                minikube status || (echo "❌ Minikube no está corriendo"; exit 1)
+                kubectl get nodes || (echo "❌ No se puede conectar al cluster"; exit 1)
+                '''
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
