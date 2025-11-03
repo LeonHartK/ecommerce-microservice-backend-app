@@ -81,18 +81,81 @@ pipeline {
             }
         }
 
+        stage('Clean Old Deployments') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
+                    bat '''
+                    echo Limpiando deployments anteriores...
+                    kubectl delete deployment --all --ignore-not-found=true
+                    kubectl delete service --all --ignore-not-found=true
+                    echo Esperando limpieza...
+                    timeout /t 15 /nobreak
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
-                    echo Desplegando microservicios en Kubernetes...
-                    kubectl apply -f k8s\\deployments\\
-                    kubectl apply -f k8s\\services\\
+                    echo ========================================
+                    echo PASO 1: Desplegando Service Discovery
+                    echo ========================================
+                    kubectl apply -f k8s\\deployments\\service-discovery-deployment.yaml
+                    kubectl apply -f k8s\\services\\service-discovery-service.yaml
+                    echo Esperando 45 segundos para Service Discovery...
+                    timeout /t 45 /nobreak
+                    kubectl get pods -l app=service-discovery
+                    
                     echo.
-                    echo Esperando a que los pods estén listos...
-                    timeout /t 10 /nobreak
+                    echo ========================================
+                    echo PASO 2: Desplegando Microservicios Core
+                    echo ========================================
+                    kubectl apply -f k8s\\deployments\\user-service-deployment.yaml
+                    kubectl apply -f k8s\\deployments\\product-service-deployment.yaml
+                    kubectl apply -f k8s\\deployments\\payment-service-deployment.yaml
+                    kubectl apply -f k8s\\deployments\\order-service-deployment.yaml
+                    
+                    kubectl apply -f k8s\\services\\user-service-service.yaml
+                    kubectl apply -f k8s\\services\\product-service-service.yaml
+                    kubectl apply -f k8s\\services\\payment-service-service.yaml
+                    kubectl apply -f k8s\\services\\order-service-service.yaml
+                    
+                    echo Esperando 60 segundos para microservicios...
+                    timeout /t 60 /nobreak
+                    kubectl get pods
+                    
+                    echo.
+                    echo ========================================
+                    echo PASO 3: Desplegando API Gateway
+                    echo ========================================
+                    kubectl apply -f k8s\\deployments\\api-gateway-deployment.yaml
+                    kubectl apply -f k8s\\services\\api-gateway-service.yaml
+                    echo Esperando 30 segundos para API Gateway...
+                    timeout /t 30 /nobreak
+                    
+                    echo.
+                    echo ========================================
+                    echo PASO 4: Desplegando Proxy Client
+                    echo ========================================
+                    kubectl apply -f k8s\\deployments\\proxy-client-deployment.yaml
+                    kubectl apply -f k8s\\services\\proxy-client-service.yaml
+                    echo Esperando 30 segundos para Proxy Client...
+                    timeout /t 30 /nobreak
+                    
+                    echo.
+                    echo ========================================
+                    echo ESTADO FINAL DEL CLUSTER
+                    echo ========================================
                     kubectl get pods -o wide
+                    echo.
                     kubectl get services
+                    echo.
+                    echo ========================================
+                    echo Verificando health de los servicios
+                    echo ========================================
+                    kubectl get pods --field-selector=status.phase!=Running
                     '''
                 }
             }
@@ -102,6 +165,12 @@ pipeline {
     post {
         always {
             bat 'docker logout || exit 0'
+        }
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'Deployment failed. Check logs above.'
         }
     }
 }
