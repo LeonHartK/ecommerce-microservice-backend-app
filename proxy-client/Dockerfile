@@ -5,5 +5,5 @@ WORKDIR /home/app
 ENV SPRING_PROFILES_ACTIVE dev
 COPY . .
 ADD target/proxy-client-v${PROJECT_VERSION}.jar proxy-client.jar
-EXPOSE 8900
+EXPOSE 8600
 ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "proxy-client.jar"]
