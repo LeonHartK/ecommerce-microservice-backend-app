@@ -73,7 +73,6 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
-                    echo Verificando conexión con el cluster...
                     kubectl config current-context
                     kubectl get nodes
                     kubectl cluster-info
