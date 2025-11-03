@@ -100,13 +100,25 @@ pipeline {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
                     echo ========================================
+                    echo PASO 0: Desplegando PostgreSQL
+                    echo ========================================
+                    kubectl apply -f k8s\\configmaps\\postgres-config.yaml
+                    kubectl apply -f k8s\\secrets\\postgres-secret.yaml
+                    kubectl apply -f k8s\\volumes\\postgres-pvc.yaml
+                    kubectl apply -f k8s\\deployments\\postgres-deployment.yaml
+                    kubectl apply -f k8s\\services\\postgres-service.yaml
+                    echo Esperando 60 segundos para PostgreSQL...
+                    ping 127.0.0.1 -n 61 > nul
+                    kubectl get pods -l app=postgres
+                    
+                    echo.
+                    echo ========================================
                     echo PASO 1: Desplegando Service Discovery
                     echo ========================================
                     kubectl apply -f k8s\\deployments\\service-discovery-deployment.yaml
                     kubectl apply -f k8s\\services\\service-discovery-service.yaml
-                    echo Esperando 45 segundos para Service Discovery...
-                    ping 127.0.0.1 -n 46 > nul
-                    kubectl get pods -l app=service-discovery
+                    echo Esperando 60 segundos para Service Discovery...
+                    ping 127.0.0.1 -n 61 > nul
                     
                     echo.
                     echo ========================================

@@ -15,50 +15,73 @@ spec:
         app: user-service
     spec:
       initContainers:
-        - name: wait-for-discovery
-          image: busybox:1.28
-          command:
-            - "sh"
-            - "-c"
-            - "until nslookup service-discovery.default.svc.cluster.local; do echo waiting for service-discovery; sleep 5; done;"
+      - name: wait-for-postgres
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 3; done;']
+      - name: wait-for-discovery
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup service-discovery.default.svc.cluster.local; do echo waiting for service-discovery; sleep 5; done;']
       containers:
-        - name: user-service
-          image: docker.io/leonkhart/user-service:dev
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8081
-              name: http
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "dev"
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-              value: "http://service-discovery:8761/eureka/"
-            - name: SPRING_CLOUD_CONFIG_ENABLED
-              value: "false"
-            - name: SPRING_ZIPKIN_ENABLED
-              value: "false"
-            - name: JAVA_OPTS
-              value: "-Xmx512m -Xms256m"
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "500m"
-          livenessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8081
-            initialDelaySeconds: 120
-            periodSeconds: 15
-            timeoutSeconds: 5
-            failureThreshold: 5
-          readinessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8081
-            initialDelaySeconds: 90
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 5
+      - name: user-service
+        image: docker.io/leonkhart/user-service:dev
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8200
+          name: http
+          protocol: TCP
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "dev"
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_NAME
+          value: "ecommerce"
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://service-discovery:8761/eureka/"
+        - name: SPRING_CLOUD_CONFIG_ENABLED
+          value: "false"
+        - name: SPRING_ZIPKIN_ENABLED
+          value: "false"
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        startupProbe:
+          httpGet:
+            path: /user-service/actuator/health
+            port: 8200
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 40
+        livenessProbe:
+          httpGet:
+            path: /user-service/actuator/health
+            port: 8200
+          initialDelaySeconds: 0
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /user-service/actuator/health
+            port: 8200
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 3
