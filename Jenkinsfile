@@ -69,25 +69,16 @@ pipeline {
             }
         }
 
-        stage('Test Kubernetes Connection') {
+        stage('Verify Cluster Connection') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
                     echo Verificando conexión con el cluster...
                     kubectl config current-context
                     kubectl get nodes
+                    kubectl cluster-info
                     '''
                 }
-            }
-        }
-
-        stage('Verify Cluster Connection') {
-            steps {
-                bat '''
-                echo Verificando conexión con el cluster...
-                minikube status || (echo "❌ Minikube no está corriendo"; exit 1)
-                kubectl get nodes || (echo "❌ No se puede conectar al cluster"; exit 1)
-                '''
             }
         }
 
@@ -98,7 +89,11 @@ pipeline {
                     echo Desplegando microservicios en Kubernetes...
                     kubectl apply -f k8s\\deployments\\
                     kubectl apply -f k8s\\services\\
+                    echo.
+                    echo Esperando a que los pods estén listos...
+                    timeout /t 10 /nobreak
                     kubectl get pods -o wide
+                    kubectl get services
                     '''
                 }
             }
