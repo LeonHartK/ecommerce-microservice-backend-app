@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy-client
+  labels:
+    app: proxy-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy-client
+  template:
+    metadata:
+      labels:
+        app: proxy-client
+    spec:
+      containers:
+        - name: proxy-client
+          image: docker.io/leonkhart/proxy-client:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8600
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://service-discovery:8761/eureka/
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8600
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8600
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

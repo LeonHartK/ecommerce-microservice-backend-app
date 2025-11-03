@@ -32,7 +32,8 @@ pipeline {
                         "order-service",
                         "product-service",
                         "payment-service",
-                        "user-service"
+                        "user-service",
+                        "proxy-client"
                     ]
                     for (svc in services) {
                         bat """
@@ -57,7 +58,8 @@ pipeline {
                             "order-service",
                             "product-service",
                             "payment-service",
-                            "user-service"
+                            "user-service",
+                            "proxy-client"
                         ]
                         for (svc in services) {
                             bat "docker push %REGISTRY%/${svc}:dev"

@@ -5,8 +5,6 @@ RUN mkdir -p /home/app
 WORKDIR /home/app
 ENV SPRING_PROFILES_ACTIVE dev
 COPY . .
-ADD target/product-service-v${PROJECT_VERSION}.jar product-service.jar
-EXPOSE 8500
-ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "product-service.jar"]
-
-
+ADD target/proxy-client-v${PROJECT_VERSION}.jar proxy-client.jar
+EXPOSE 8900
+ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "proxy-client.jar"]
