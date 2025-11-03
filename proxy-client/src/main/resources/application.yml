@@ -29,9 +29,13 @@ eureka:
     registry-fetch-interval-seconds: 10
   instance:
     prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
     hostname: ${spring.application.name}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
+    non-secure-port: 8080
+    non-secure-port-enabled: true
+    secure-port-enabled: false
 
 management:
   endpoints:
@@ -41,3 +45,6 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    defaults:
+      enabled: true
