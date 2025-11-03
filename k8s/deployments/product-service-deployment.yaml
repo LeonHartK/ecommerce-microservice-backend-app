@@ -14,33 +14,48 @@ spec:
       labels:
         app: product-service
     spec:
+      initContainers:
+      - name: wait-for-discovery
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup service-discovery.default.svc.cluster.local; do echo waiting for service-discovery; sleep 5; done;']
       containers:
-        - name: product-service
-          image: docker.io/leonkhart/product-service:dev
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8500
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: dev
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-              value: http://service-discovery:8761/eureka/
-          livenessProbe:
-            httpGet:
-              path: /actuator/health/liveness
-              port: 8500
-            initialDelaySeconds: 20
-            periodSeconds: 15
-          readinessProbe:
-            httpGet:
-              path: /actuator/health/readiness
-              port: 8500
-            initialDelaySeconds: 30
-            periodSeconds: 20
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
+      - name: product-service
+        image: docker.io/leonkhart/product-service:dev
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8500
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "dev"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://service-discovery:8761/eureka/"
+        - name: SPRING_CLOUD_CONFIG_ENABLED
+          value: "false"
+        - name: SPRING_ZIPKIN_ENABLED
+          value: "false"
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8500
+          initialDelaySeconds: 120
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8500
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5

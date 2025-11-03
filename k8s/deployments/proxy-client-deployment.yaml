@@ -18,9 +18,9 @@ spec:
       - name: wait-for-discovery
         image: busybox:1.28
         command: ['sh', '-c', 'until nslookup service-discovery.default.svc.cluster.local; do echo waiting for service-discovery; sleep 5; done;']
-      - name: wait-for-gateway
+      - name: wait-for-services
         image: busybox:1.28
-        command: ['sh', '-c', 'until nslookup api-gateway.default.svc.cluster.local; do echo waiting for api-gateway; sleep 5; done;']
+        command: ['sh', '-c', 'echo "Waiting for core services..."; sleep 30;']
       containers:
       - name: proxy-client
         image: docker.io/leonkhart/proxy-client:dev
@@ -31,12 +31,16 @@ spec:
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        - name: EUREKA_SERVER
           value: "http://service-discovery:8761/eureka/"
         - name: SPRING_CLOUD_CONFIG_ENABLED
           value: "false"
-        - name: SPRING_CLOUD_CONFIG_IMPORT_CHECK_ENABLED
+        - name: SPRING_ZIPKIN_ENABLED
           value: "false"
+        - name: SPRING_SLEUTH_ENABLED
+          value: "false"
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m"
         resources:
           requests:
             memory: "512Mi"
@@ -48,16 +52,16 @@ spec:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 120
-          periodSeconds: 10
+          initialDelaySeconds: 180
+          periodSeconds: 15
           timeoutSeconds: 5
           failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 90
-          periodSeconds: 5
+          initialDelaySeconds: 150
+          periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 5
       restartPolicy: Always

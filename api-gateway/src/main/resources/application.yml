@@ -1,11 +1,14 @@
-
 server:
+  port: 8761
   servlet:
     context-path: /
 
 spring:
   zipkin:
+    enabled: false
     base-url: ${SPRING_ZIPKIN_BASE_URL:http://localhost:9411/}
+  sleuth:
+    enabled: false
   application:
     name: API-GATEWAY
   profiles:
@@ -35,6 +38,10 @@ spring:
               - PATCH
               - OPTIONS
       routes:
+      - id: PROXY-CLIENT
+        uri: lb://PROXY-CLIENT
+        predicates:
+        - Path=/app/**
       - id: ORDER-SERVICE
         uri: lb://ORDER-SERVICE
         predicates:
@@ -59,10 +66,17 @@ spring:
         uri: lb://FAVOURITE-SERVICE
         predicates:
         - Path=/favourite-service/**
-      - id: PROXY-CLIENT
-        uri: lb://PROXY-CLIENT
-        predicates:
-        - Path=/app/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://service-discovery:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    hostname: ${spring.application.name}
+    lease-renewal-interval-in-seconds: 10
 
 resilience4j:
   circuitbreaker:
@@ -82,6 +96,10 @@ management:
   health:
     circuitbreakers:
       enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
   endpoint:
     health:
       show-details: always
@@ -93,5 +111,5 @@ management:
 
 
 
- 
- 
+
+
