@@ -89,7 +89,7 @@ pipeline {
                     kubectl delete deployment --all --ignore-not-found=true
                     kubectl delete service --all --ignore-not-found=true
                     echo Esperando limpieza...
-                    timeout /t 15 /nobreak
+                    ping 127.0.0.1 -n 16 > nul
                     '''
                 }
             }
@@ -105,7 +105,7 @@ pipeline {
                     kubectl apply -f k8s\\deployments\\service-discovery-deployment.yaml
                     kubectl apply -f k8s\\services\\service-discovery-service.yaml
                     echo Esperando 45 segundos para Service Discovery...
-                    timeout /t 45 /nobreak
+                    ping 127.0.0.1 -n 46 > nul
                     kubectl get pods -l app=service-discovery
                     
                     echo.
@@ -123,7 +123,7 @@ pipeline {
                     kubectl apply -f k8s\\services\\order-service-service.yaml
                     
                     echo Esperando 60 segundos para microservicios...
-                    timeout /t 60 /nobreak
+                    ping 127.0.0.1 -n 61 > nul
                     kubectl get pods
                     
                     echo.
@@ -133,7 +133,7 @@ pipeline {
                     kubectl apply -f k8s\\deployments\\api-gateway-deployment.yaml
                     kubectl apply -f k8s\\services\\api-gateway-service.yaml
                     echo Esperando 30 segundos para API Gateway...
-                    timeout /t 30 /nobreak
+                    ping 127.0.0.1 -n 31 > nul
                     
                     echo.
                     echo ========================================
@@ -142,7 +142,7 @@ pipeline {
                     kubectl apply -f k8s\\deployments\\proxy-client-deployment.yaml
                     kubectl apply -f k8s\\services\\proxy-client-service.yaml
                     echo Esperando 30 segundos para Proxy Client...
-                    timeout /t 30 /nobreak
+                    ping 127.0.0.1 -n 31 > nul
                     
                     echo.
                     echo ========================================
