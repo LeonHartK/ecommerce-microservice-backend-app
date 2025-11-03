@@ -18,16 +18,17 @@ spec:
       - name: wait-for-discovery
         image: busybox:1.28
         command: ['sh', '-c', 'until nslookup service-discovery.default.svc.cluster.local; do echo waiting for service-discovery; sleep 5; done;']
-      - name: wait-for-core-services
+      - name: wait-for-services
         image: busybox:1.28
-        command: ['sh', '-c', 'echo "Waiting for core services to register..."; sleep 45;']
+        command: ['sh', '-c', 'echo "Waiting for microservices..."; sleep 120;']
       containers:
       - name: api-gateway
         image: docker.io/leonkhart/api-gateway:dev
         imagePullPolicy: Always
         ports:
-        - containerPort: 8761
+        - containerPort: 8080
           name: http
+          protocol: TCP
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
@@ -36,6 +37,8 @@ spec:
         - name: SPRING_CLOUD_CONFIG_ENABLED
           value: "false"
         - name: SPRING_ZIPKIN_ENABLED
+          value: "false"
+        - name: SPRING_SLEUTH_ENABLED
           value: "false"
         - name: JAVA_OPTS
           value: "-Xmx512m -Xms256m"
@@ -46,19 +49,31 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 40
         livenessProbe:
           httpGet:
             path: /actuator/health
-            port: 8761
-          initialDelaySeconds: 120
-          periodSeconds: 15
-          timeoutSeconds: 5
-          failureThreshold: 5
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /actuator/health
-            port: 8761
-          initialDelaySeconds: 90
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 0
           periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 5
+          timeoutSeconds: 10
+          failureThreshold: 3
+      restartPolicy: Always

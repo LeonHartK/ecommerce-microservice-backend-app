@@ -46,8 +46,9 @@ spec:
             - ping
             - -h
             - localhost
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 5
         readinessProbe:
           exec:
             command:
@@ -55,9 +56,9 @@ spec:
             - ping
             - -h
             - localhost
-          initialDelaySeconds: 5
+          initialDelaySeconds: 30
           periodSeconds: 5
+          timeoutSeconds: 5
       volumes:
       - name: mysql-storage
-        persistentVolumeClaim:
-          claimName: mysql-pvc
+        emptyDir: {}
