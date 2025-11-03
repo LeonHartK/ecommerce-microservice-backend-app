@@ -15,9 +15,9 @@ spec:
         app: user-service
     spec:
       initContainers:
-      - name: wait-for-postgres
+      - name: wait-for-mysql
         image: busybox:1.28
-        command: ['sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 3; done;']
+        command: ['sh', '-c', 'until nc -z mysql 3306; do echo waiting for mysql; sleep 3; done;']
       - name: wait-for-discovery
         image: busybox:1.28
         command: ['sh', '-c', 'until nslookup service-discovery.default.svc.cluster.local; do echo waiting for service-discovery; sleep 5; done;']
@@ -33,19 +33,13 @@ spec:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
         - name: DB_HOST
-          value: "postgres"
+          value: "mysql"
         - name: DB_NAME
           value: "ecommerce"
         - name: DB_USER
-          valueFrom:
-            configMapKeyRef:
-              name: postgres-config
-              key: POSTGRES_USER
+          value: "ecommerce_user"
         - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_PASSWORD
+          value: "ecommerce_pass"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://service-discovery:8761/eureka/"
         - name: SPRING_CLOUD_CONFIG_ENABLED
