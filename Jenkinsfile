@@ -103,18 +103,21 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
+                    echo.
                     echo ========================================
                     echo PASO 0: Desplegando MySQL
                     echo ========================================
-                    kubectl apply -f k8s\\volumes\\mysql-pvc.yaml
+                    kubectl delete pvc mysql-pvc --ignore-not-found=true
+                    ping 127.0.0.1 -n 6 > nul
                     kubectl apply -f k8s\\deployments\\mysql-deployment.yaml
                     kubectl apply -f k8s\\services\\mysql-service.yaml
-                    echo Esperando 90 segundos para MySQL...
-                    ping 127.0.0.1 -n 91 > nul
+                    echo Esperando 120 segundos para MySQL...
+                    ping 127.0.0.1 -n 121 > nul
                     
                     echo Verificando estado de MySQL:
                     kubectl get pods -l app=mysql
-                    kubectl logs -l app=mysql --tail=30 || echo "MySQL aun no tiene logs"
+                    kubectl describe pod -l app=mysql | findstr /C:"Status:" /C:"Ready:" /C:"Events:" || echo Verificando...
+                    kubectl logs -l app=mysql --tail=50 || echo MySQL aun inicializando...
                     
                     echo.
                     echo ========================================
@@ -195,7 +198,7 @@ pipeline {
                     echo ========================================
                     echo Eventos recientes:
                     echo ========================================
-                    kubectl get events --sort-by=.metadata.creationTimestamp --field-selector type=Warning | Select-Object -Last 20
+                    kubectl get events --sort-by=.metadata.creationTimestamp | findstr Warning || echo Sin eventos de warning
                     echo.
                     echo ========================================
                     echo Verificando registro en Eureka
