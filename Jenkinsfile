@@ -73,6 +73,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
+                    echo Verificando conexion al cluster...
                     kubectl config current-context
                     kubectl get nodes
                     kubectl cluster-info
@@ -85,11 +86,14 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
+                    echo ========================================
                     echo Limpiando deployments anteriores...
+                    echo ========================================
                     kubectl delete deployment --all --ignore-not-found=true
                     kubectl delete service --all --ignore-not-found=true
-                    echo Esperando limpieza...
-                    ping 127.0.0.1 -n 16 > nul
+                    kubectl delete pvc --all --ignore-not-found=true
+                    echo Esperando limpieza completa...
+                    ping 127.0.0.1 -n 21 > nul
                     '''
                 }
             }
@@ -100,16 +104,17 @@ pipeline {
                 withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
                     bat '''
                     echo ========================================
-                    echo PASO 0: Desplegando PostgreSQL
+                    echo PASO 0: Desplegando MySQL
                     echo ========================================
-                    kubectl apply -f k8s\\configmaps\\postgres-config.yaml
-                    kubectl apply -f k8s\\secrets\\postgres-secret.yaml
-                    kubectl apply -f k8s\\volumes\\postgres-pvc.yaml
-                    kubectl apply -f k8s\\deployments\\postgres-deployment.yaml
-                    kubectl apply -f k8s\\services\\postgres-service.yaml
-                    echo Esperando 60 segundos para PostgreSQL...
-                    ping 127.0.0.1 -n 61 > nul
-                    kubectl get pods -l app=postgres
+                    kubectl apply -f k8s\\volumes\\mysql-pvc.yaml
+                    kubectl apply -f k8s\\deployments\\mysql-deployment.yaml
+                    kubectl apply -f k8s\\services\\mysql-service.yaml
+                    echo Esperando 90 segundos para MySQL...
+                    ping 127.0.0.1 -n 91 > nul
+                    
+                    echo Verificando estado de MySQL:
+                    kubectl get pods -l app=mysql
+                    kubectl logs -l app=mysql --tail=30 || echo "MySQL aun no tiene logs"
                     
                     echo.
                     echo ========================================
@@ -120,22 +125,40 @@ pipeline {
                     echo Esperando 60 segundos para Service Discovery...
                     ping 127.0.0.1 -n 61 > nul
                     
+                    echo Verificando estado de Service Discovery:
+                    kubectl get pods -l app=service-discovery
+                    kubectl logs -l app=service-discovery --tail=20 || echo "Service Discovery aun no tiene logs"
+                    
                     echo.
                     echo ========================================
                     echo PASO 2: Desplegando Microservicios Core
                     echo ========================================
+                    echo Desplegando User Service...
                     kubectl apply -f k8s\\deployments\\user-service-deployment.yaml
-                    kubectl apply -f k8s\\deployments\\product-service-deployment.yaml
-                    kubectl apply -f k8s\\deployments\\payment-service-deployment.yaml
-                    kubectl apply -f k8s\\deployments\\order-service-deployment.yaml
-                    
                     kubectl apply -f k8s\\services\\user-service-service.yaml
+                    echo Esperando 45 segundos...
+                    ping 127.0.0.1 -n 46 > nul
+                    
+                    echo Desplegando Product Service...
+                    kubectl apply -f k8s\\deployments\\product-service-deployment.yaml
                     kubectl apply -f k8s\\services\\product-service-service.yaml
+                    echo Esperando 45 segundos...
+                    ping 127.0.0.1 -n 46 > nul
+                    
+                    echo Desplegando Payment Service...
+                    kubectl apply -f k8s\\deployments\\payment-service-deployment.yaml
                     kubectl apply -f k8s\\services\\payment-service-service.yaml
+                    echo Esperando 45 segundos...
+                    ping 127.0.0.1 -n 46 > nul
+                    
+                    echo Desplegando Order Service...
+                    kubectl apply -f k8s\\deployments\\order-service-deployment.yaml
                     kubectl apply -f k8s\\services\\order-service-service.yaml
                     
-                    echo Esperando 60 segundos para microservicios...
-                    ping 127.0.0.1 -n 61 > nul
+                    echo Esperando 90 segundos para que los microservicios se registren en Eureka...
+                    ping 127.0.0.1 -n 91 > nul
+                    
+                    echo Estado actual de los microservicios:
                     kubectl get pods
                     
                     echo.
@@ -144,8 +167,8 @@ pipeline {
                     echo ========================================
                     kubectl apply -f k8s\\deployments\\api-gateway-deployment.yaml
                     kubectl apply -f k8s\\services\\api-gateway-service.yaml
-                    echo Esperando 30 segundos para API Gateway...
-                    ping 127.0.0.1 -n 31 > nul
+                    echo Esperando 60 segundos para API Gateway...
+                    ping 127.0.0.1 -n 61 > nul
                     
                     echo.
                     echo ========================================
@@ -153,8 +176,8 @@ pipeline {
                     echo ========================================
                     kubectl apply -f k8s\\deployments\\proxy-client-deployment.yaml
                     kubectl apply -f k8s\\services\\proxy-client-service.yaml
-                    echo Esperando 30 segundos para Proxy Client...
-                    ping 127.0.0.1 -n 31 > nul
+                    echo Esperando 60 segundos para Proxy Client...
+                    ping 127.0.0.1 -n 61 > nul
                     
                     echo.
                     echo ========================================
@@ -165,9 +188,45 @@ pipeline {
                     kubectl get services
                     echo.
                     echo ========================================
-                    echo Verificando health de los servicios
+                    echo Pods con problemas (si los hay):
                     echo ========================================
                     kubectl get pods --field-selector=status.phase!=Running
+                    echo.
+                    echo ========================================
+                    echo Eventos recientes:
+                    echo ========================================
+                    kubectl get events --sort-by=.metadata.creationTimestamp --field-selector type=Warning | Select-Object -Last 20
+                    echo.
+                    echo ========================================
+                    echo Verificando registro en Eureka
+                    echo ========================================
+                    echo Para ver Eureka Dashboard ejecutar:
+                    echo kubectl port-forward service/service-discovery 8761:8761
+                    echo Luego abrir: http://localhost:8761
+                    '''
+                }
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
+                    bat '''
+                    echo ========================================
+                    echo VERIFICACION DE SALUD DE SERVICIOS
+                    echo ========================================
+                    echo.
+                    echo Esperando 60 segundos adicionales para estabilizacion...
+                    ping 127.0.0.1 -n 61 > nul
+                    echo.
+                    echo Estado final de todos los pods:
+                    kubectl get pods
+                    echo.
+                    echo Pods que no estan Running:
+                    kubectl get pods --field-selector=status.phase!=Running --no-headers | findstr /V "Completed" || echo Todos los pods estan Running!
+                    echo.
+                    echo Servicios expuestos:
+                    kubectl get services
                     '''
                 }
             }
@@ -179,10 +238,41 @@ pipeline {
             bat 'docker logout || exit 0'
         }
         success {
+            echo '========================================='
             echo 'Deployment completed successfully!'
+            echo '========================================='
+            echo ''
+            echo 'Comandos utiles:'
+            echo '1. Ver Eureka Dashboard:'
+            echo '   kubectl port-forward service/service-discovery 8761:8761'
+            echo '   http://localhost:8761'
+            echo ''
+            echo '2. Ver API Gateway:'
+            echo '   kubectl port-forward service/api-gateway 8080:8080'
+            echo '   http://localhost:8080'
+            echo ''
+            echo '3. Ver logs de un servicio:'
+            echo '   kubectl logs -f deployment/user-service'
+            echo ''
+            echo '4. Ver estado de pods:'
+            echo '   kubectl get pods -w'
+            echo '========================================='
         }
         failure {
-            echo 'Deployment failed. Check logs above.'
+            echo '========================================='
+            echo 'Deployment failed!'
+            echo '========================================='
+            echo ''
+            echo 'Para diagnosticar:'
+            echo '1. Ver logs del ultimo pod fallido:'
+            echo '   kubectl logs <pod-name>'
+            echo ''
+            echo '2. Ver eventos del cluster:'
+            echo '   kubectl get events --sort-by=.metadata.creationTimestamp'
+            echo ''
+            echo '3. Describir un pod problematico:'
+            echo '   kubectl describe pod <pod-name>'
+            echo '========================================='
         }
     }
 }
