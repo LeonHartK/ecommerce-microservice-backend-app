@@ -5,6 +5,7 @@ spring:
   application:
     name: USER-SERVICE
   datasource:
+    driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${DB_HOST:postgres}:5432/${DB_NAME:ecommerce}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
@@ -14,6 +15,7 @@ spring:
     show-sql: true
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
   flyway:
     enabled: true
