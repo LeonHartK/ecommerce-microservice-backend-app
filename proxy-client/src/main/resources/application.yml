@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8600
   servlet:
     context-path: /proxy-client
 
@@ -33,7 +33,7 @@ eureka:
     hostname: ${spring.application.name}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
-    non-secure-port: 8080
+    non-secure-port: 8600
     non-secure-port-enabled: true
     secure-port-enabled: false
 

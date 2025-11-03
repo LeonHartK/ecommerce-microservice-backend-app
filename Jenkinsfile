@@ -17,6 +17,20 @@ pipeline {
             }
         }
 
+        stage('Pre-pull Base Images') {
+            steps {
+                script {
+                    bat '''
+                    echo Pulling base images...
+                    docker pull openjdk:11-jre-slim || docker pull amazoncorretto:11-alpine
+                    docker tag openjdk:11-jre-slim openjdk:11 || docker tag amazoncorretto:11-alpine openjdk:11
+                    echo Base image ready:
+                    docker images openjdk:11
+                    '''
+                }
+            }
+        }
+
         stage('Build JARs') {
             steps {
                 bat 'mvn clean package -DskipTests'

@@ -1,5 +1,5 @@
 server:
-  port: 8400
+  port: 8500
   servlet:
     context-path: /payment-service
 
