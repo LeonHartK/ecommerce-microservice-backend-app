@@ -26,7 +26,7 @@ spec:
         image: docker.io/leonkhart/proxy-client:dev
         imagePullPolicy: Always
         ports:
-        - containerPort: 8080
+        - containerPort: 8600
           name: http
           protocol: TCP
         env:
@@ -52,7 +52,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /proxy-client/actuator/health
-            port: 8080
+            port: 8600
             scheme: HTTP
           initialDelaySeconds: 180
           periodSeconds: 15
@@ -61,7 +61,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /proxy-client/actuator/health
-            port: 8080
+            port: 8600
             scheme: HTTP
           initialDelaySeconds: 150
           periodSeconds: 10
@@ -70,7 +70,7 @@ spec:
         startupProbe:
           httpGet:
             path: /proxy-client/actuator/health
-            port: 8080
+            port: 8600
             scheme: HTTP
           initialDelaySeconds: 30
           periodSeconds: 10

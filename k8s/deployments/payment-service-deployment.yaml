@@ -23,8 +23,9 @@ spec:
         image: docker.io/leonkhart/payment-service:dev
         imagePullPolicy: Always
         ports:
-        - containerPort: 8400
+        - containerPort: 8500
           name: http
+          protocol: TCP
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"

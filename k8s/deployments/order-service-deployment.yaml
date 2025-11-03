@@ -23,8 +23,9 @@ spec:
         image: docker.io/leonkhart/order-service:dev
         imagePullPolicy: Always
         ports:
-        - containerPort: 8300
+        - containerPort: 8400
           name: http
+          protocol: TCP
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
