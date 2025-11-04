@@ -1,3 +1,6 @@
-
+-- ...existing code...
 ALTER TABLE credentials
-  ADD CONSTRAINT fk2_assign FOREIGN KEY (user_id) REFERENCES users (user_id);
+  ADD CONSTRAINT fk_credentials_user
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+  ON DELETE CASCADE ON UPDATE CASCADE;
+-- ...existing code...
